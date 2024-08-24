@@ -379,7 +379,7 @@ struct EglContextLock<'a> {
     display: khronos_egl::Display,
 }
 
-/// A guard containing a lock to an [`AdapterContext`]
+/// A guard containing a lock to an [`AdapterContext`], while the GL context is kept current.
 pub struct AdapterContextLock<'a> {
     glow: MutexGuard<'a, ManuallyDrop<glow::Context>>,
     egl: Option<EglContextLock<'a>>,
@@ -1082,7 +1082,8 @@ impl crate::Instance for Instance {
             unsafe { gl.debug_message_callback(super::gl_debug_message_callback) };
         }
 
-        // Avoid accidental drop when the context is not current.
+        // Wrap in ManuallyDrop to make it easier to "current" the
+        // GL context before dropping this GLOW context.
         let gl = ManuallyDrop::new(gl);
         inner.egl.unmake_current();
 
