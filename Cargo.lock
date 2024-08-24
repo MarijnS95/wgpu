@@ -4975,6 +4975,7 @@ dependencies = [
  "wgpu",
  "wgpu-test",
  "wgpu-types",
+ "windows 0.58.0",
  "winit 0.29.15",
 ]
 
