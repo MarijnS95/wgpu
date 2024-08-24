@@ -1,9 +1,16 @@
 use std::borrow::Cow;
+use wgpu::rwh::{HasWindowHandle, RawWindowHandle, Win32WindowHandle};
+use windows::{
+    core::Interface,
+    Win32::{Foundation::HWND, Graphics::DirectComposition},
+};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::Window,
 };
+
+const USE_HANDLE: bool = true;
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut size = window.inner_size();
@@ -12,7 +19,57 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let instance = wgpu::Instance::default();
 
-    let surface = instance.create_surface(&window).unwrap();
+    let dev: DirectComposition::IDCompositionDevice = // Or DesktopDevice
+        unsafe { DirectComposition::DCompositionCreateDevice2(None) }.unwrap();
+    dbg!(&dev);
+
+    let ddev: DirectComposition::IDCompositionDeviceDebug = dev.cast().unwrap();
+    unsafe { ddev.EnableDebugCounters() }.unwrap();
+
+    let RawWindowHandle::Win32(Win32WindowHandle { hwnd, .. }) =
+        window.window_handle().unwrap().as_raw()
+    else {
+        panic!()
+    };
+    let composition_target =
+        unsafe { dev.CreateTargetForHwnd(HWND(hwnd.get() as *mut _), true) }.unwrap();
+    dbg!(&composition_target);
+
+    let surf_hnd = unsafe {
+        DirectComposition::DCompositionCreateSurfaceHandle(
+            3, // COMPOSITIONSURFACE_ALL_ACCESS
+            None,
+        )
+    }
+    .unwrap();
+    dbg!(surf_hnd);
+
+    let main_visual = unsafe { dev.CreateVisual() }.unwrap();
+    unsafe { composition_target.SetRoot(&main_visual) }.unwrap();
+
+    let surface = if !USE_HANDLE {
+        unsafe {
+            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::CompositionVisual(
+                main_visual.as_raw(),
+            ))
+        }
+        .unwrap()
+    } else {
+        let render_surf = unsafe { dev.CreateSurfaceFromHandle(surf_hnd) }.unwrap();
+        dbg!(&render_surf);
+        unsafe { main_visual.SetContent(&render_surf) }.unwrap();
+
+        let surface = unsafe {
+            instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::SurfaceHandle(surf_hnd.0))
+        }
+        .unwrap();
+        dbg!(&surface);
+
+        surface
+    };
+
+    // main_visual.SetCompositeMode(DirectComposition::DCOMPOSITION_COMPOSITE_MODE_DESTINATION_INVERT);
+
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
@@ -79,8 +136,10 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut config = surface
         .get_default_config(&adapter, size.width, size.height)
         .unwrap();
+
     surface.configure(&device, &config);
 
+    let mut rendered = false;
     let window = &window;
     event_loop
         .run(move |event, target| {
@@ -101,9 +160,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         config.height = new_size.height.max(1);
                         surface.configure(&device, &config);
                         // On macos the window needs to be redrawn manually after resizing
-                        window.request_redraw();
+                        // window.request_redraw();
                     }
                     WindowEvent::RedrawRequested => {
+                        // if rendered {
+                        //     // TODO: Play with scaling?
+                        //     unsafe { dev.Commit() }.unwrap();
+                        //     return;
+                        // }
+                        // rendered = true;
                         let frame = surface
                             .get_current_texture()
                             .expect("Failed to acquire next swap chain texture");
@@ -136,6 +201,51 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
                         queue.submit(Some(encoder.finish()));
                         frame.present();
+
+                        unsafe { dev.Commit() }.unwrap();
+                        // unsafe { dev.WaitForCommitCompletion() }.unwrap();
+                        let mut stats = Default::default();
+                        unsafe { dev.GetFrameStatistics(&mut stats) }.unwrap();
+                        dbg!(stats);
+                        for fid in [
+                            DirectComposition::COMPOSITION_FRAME_ID_COMPLETED,
+                            DirectComposition::COMPOSITION_FRAME_ID_CREATED,
+                            DirectComposition::COMPOSITION_FRAME_ID_CONFIRMED,
+                        ] {
+                            // TODO: Skip if the ID for created and confirmed is the same.
+                            let c =
+                                dbg!(unsafe { DirectComposition::DCompositionGetFrameId(fid) }
+                                    .unwrap());
+                            let mut framestats = Default::default();
+                            let mut ids = Vec::with_capacity(20);
+                            let mut actual = 0;
+                            unsafe {
+                                DirectComposition::DCompositionGetStatistics(
+                                    c,
+                                    &mut framestats,
+                                    // Note that we can also query 0/null() targets and let this function
+                                    // only return how many items there would be, to allocate the Vec.
+                                    ids.capacity() as u32,
+                                    Some(ids.as_mut_ptr()),
+                                    Some(&mut actual),
+                                )
+                            }
+                            .unwrap();
+                            // dbg!(actual);
+                            unsafe { ids.set_len(actual as usize) };
+                            dbg!(framestats);
+                            // dbg!(&ids);
+                            for id in &ids {
+                                let mut stats = Default::default();
+                                unsafe {
+                                    DirectComposition::DCompositionGetTargetStatistics(
+                                        c, id, &mut stats,
+                                    )
+                                }
+                                .unwrap();
+                                dbg!(stats);
+                            }
+                        }
                     }
                     WindowEvent::CloseRequested => target.exit(),
                     _ => {}

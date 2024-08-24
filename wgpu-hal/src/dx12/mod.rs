@@ -1090,6 +1090,7 @@ impl crate::Surface for Surface {
                         profiling::scope!(
                             "IDXGIFactoryMedia::CreateSwapChainForCompositionSurfaceHandle"
                         );
+                        dbg!("IDXGIFactoryMedia::CreateSwapChainForCompositionSurfaceHandle");
                         unsafe {
                             self.factory_media
                                 .as_ref()

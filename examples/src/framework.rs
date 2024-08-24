@@ -34,6 +34,7 @@ pub trait Example: 'static + Sized {
 
     fn init(
         config: &wgpu::SurfaceConfiguration,
+        // adapter: &wgpu::Instance,
         adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -405,6 +406,7 @@ async fn start<E: Example>(title: &str) {
                     if example.is_none() {
                         example = Some(E::init(
                             surface.config(),
+                            // &context.instance,
                             &context.adapter,
                             &context.device,
                             &context.queue,

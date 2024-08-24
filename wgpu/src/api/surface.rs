@@ -323,6 +323,7 @@ pub enum SurfaceTargetUnsafe {
     /// - surface_handle must be a valid `DirectComposition` handle to create a surface upon.   Its lifetime **will not** be internally managed: this handle **should not** be freed before
     ///   the resulting [`Surface`] is destroyed.
     #[cfg(dx12)]
+    // TODO: Rename to DirectCompositionSurface?
     SurfaceHandle(*mut std::ffi::c_void),
 
     /// Surface from DX12 `SwapChainPanel`.

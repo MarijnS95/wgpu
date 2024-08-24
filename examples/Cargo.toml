@@ -49,6 +49,7 @@ wgpu = { workspace = true, default-features = false, features = [
     "metal",
 ] }
 winit.workspace = true
+windows.workspace = true
 
 [dev-dependencies]
 wgpu-test.workspace = true
