@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 use wgpu::rwh::{HasWindowHandle, RawWindowHandle, Win32WindowHandle};
 use windows::{
-    core::Interface,
-    Win32::{Foundation::HWND, Graphics::DirectComposition},
+    core::Interface as _,
+    Win32::{
+        Foundation::HWND,
+        Graphics::{CompositionSwapchain, DirectComposition, Dxgi},
+    },
 };
 use winit::{
     event::{Event, WindowEvent},
@@ -138,6 +141,37 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         .unwrap();
 
     surface.configure(&device, &config);
+
+    let factory: CompositionSwapchain::IPresentationFactory = unsafe {
+        device.as_hal::<wgpu::hal::dx12::Api, _, _>(|device| {
+            dbg!(device.unwrap().raw_device().cast::<Dxgi::IDXGIDevice>());
+            let mut result__ = core::ptr::null_mut();
+            CompositionSwapchain::CreatePresentationFactory(
+                // dbg!(device.unwrap().raw_queue()),
+                dbg!(device.unwrap().raw_device()),
+                &CompositionSwapchain::IPresentationFactory::IID,
+                &mut result__,
+            )
+            .and_then(|()| windows::core::Type::from_abi(result__))
+        })
+    }
+    .unwrap()
+    .unwrap();
+    dbg!(factory);
+
+    // let factory: CompositionSwapchain::IPresentationFactory = unsafe {
+    //     adapter.as_hal::<wgpu::hal::dx12::Api, _, _>(|adapter| {
+    //         let mut result__ = core::ptr::null_mut();
+    //         CompositionSwapchain::CreatePresentationFactory(
+    //             dbg!(&**adapter.unwrap().raw_adapter()),
+    //             &CompositionSwapchain::IPresentationFactory::IID,
+    //             &mut result__,
+    //         )
+    //         .and_then(|()| windows::core::Type::from_abi(result__))
+    //     })
+    // }
+    // .unwrap();
+    // dbg!(factory);
 
     let mut rendered = false;
     let window = &window;
