@@ -1073,7 +1073,7 @@ impl crate::Surface for Surface {
                     BufferCount: swap_chain_buffer,
                     Scaling: Dxgi::DXGI_SCALING_STRETCH,
                     SwapEffect: Dxgi::DXGI_SWAP_EFFECT_FLIP_DISCARD,
-                    Flags: flags.0 as u32,
+                    Flags: flags,
                 };
                 let swap_chain1 = match self.target {
                     SurfaceTarget::Visual(_) | SurfaceTarget::SwapChainPanel(_) => {

@@ -197,6 +197,9 @@ ndk-sys = "0.5.0"
 #web-sys = { path = "../wasm-bindgen/crates/web-sys" }
 #js-sys = { path = "../wasm-bindgen/crates/js-sys" }
 #wasm-bindgen = { path = "../wasm-bindgen" }
+windows = { path = "../windows-rs/crates/libs/windows" }
+windows-core = { path = "../windows-rs/crates/libs/core" }
+windows-targets = { path = "../windows-rs/crates/libs/targets" }
 
 [profile.release]
 lto = "thin"

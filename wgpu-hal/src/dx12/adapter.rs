@@ -117,9 +117,7 @@ impl super::Adapter {
             name: device_name,
             vendor: desc.VendorId,
             device: desc.DeviceId,
-            device_type: if Dxgi::DXGI_ADAPTER_FLAG(desc.Flags as i32)
-                .contains(Dxgi::DXGI_ADAPTER_FLAG_SOFTWARE)
-            {
+            device_type: if desc.Flags.contains(Dxgi::DXGI_ADAPTER_FLAG_SOFTWARE) {
                 workarounds.avoid_cpu_descriptor_overwrites = true;
                 wgt::DeviceType::Cpu
             } else if features_architecture.UMA.as_bool() {

@@ -255,7 +255,7 @@ pub(super) fn compile_dxc(
     let buffer = Dxc::DxcBuffer {
         Ptr: source.as_ptr().cast(),
         Size: source.len(),
-        Encoding: Dxc::DXC_CP_UTF8.0,
+        Encoding: Dxc::DXC_CP_UTF8,
     };
 
     let compile_res: Dxc::IDxcResult = unsafe {
