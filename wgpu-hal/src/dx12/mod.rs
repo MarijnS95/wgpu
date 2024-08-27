@@ -543,7 +543,7 @@ enum SurfaceTarget {
 }
 
 pub struct Surface {
-    factory: DxgiFactory,
+    pub factory: DxgiFactory,
     factory_media: Option<Dxgi::IDXGIFactoryMedia>,
     target: SurfaceTarget,
     supports_allow_tearing: bool,

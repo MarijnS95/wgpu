@@ -181,7 +181,7 @@ impl super::Device {
         };
 
         Ok(super::Device {
-            raw: raw.clone(),
+            raw: dbg!(raw.clone()),
             present_queue,
             idler: super::Idler {
                 fence: idle_fence,
