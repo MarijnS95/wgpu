@@ -37,7 +37,8 @@ const CONTEXT_LOCK_TIMEOUT_SECS: u64 = 1;
 /// A wrapper around a `[`glow::Context`]` and the required WGL context that uses locking to
 /// guarantee exclusive access when shared with multiple threads.
 pub struct AdapterContext {
-    inner: Arc<Mutex<Inner>>,
+    glow: Mutex<ManuallyDrop<glow::Context>>,
+    wgl: Option<WglContext>,
 }
 
 unsafe impl Sync for AdapterContext {}
@@ -49,7 +50,7 @@ impl AdapterContext {
     }
 
     pub fn raw_context(&self) -> *mut c_void {
-        match self.inner.lock().context {
+        match self.wgl {
             Some(ref wgl) => wgl.context.0,
             None => ptr::null_mut(),
         }
@@ -59,18 +60,19 @@ impl AdapterContext {
     /// do rendering.
     #[track_caller]
     pub fn lock(&self) -> AdapterContextLock<'_> {
-        let inner = self
-            .inner
+        let glow = self
+            .glow
             // Don't lock forever. If it takes longer than 1 second to get the lock we've got a
             // deadlock and should panic to show where we got stuck
             .try_lock_for(Duration::from_secs(CONTEXT_LOCK_TIMEOUT_SECS))
             .expect("Could not lock adapter context. This is most-likely a deadlock.");
 
-        if let Some(wgl) = &inner.context {
-            wgl.make_current(inner.device.dc).unwrap()
-        };
+        let wgl = self.wgl.as_ref().map(|wgl| {
+            wgl.make_current(wgl.device.dc).unwrap();
+            WglContextLock { context: wgl }
+        });
 
-        AdapterContextLock { inner }
+        AdapterContextLock { glow, wgl }
     }
 
     /// Obtain a lock to the WGL context and get handle to the [`glow::Context`] that can be used to
@@ -80,42 +82,49 @@ impl AdapterContext {
     /// when `make_current` fails.
     #[track_caller]
     fn lock_with_dc(&self, device: Gdi::HDC) -> windows::core::Result<AdapterContextLock<'_>> {
-        let inner = self
-            .inner
+        let glow = self
+            .glow
             .try_lock_for(Duration::from_secs(CONTEXT_LOCK_TIMEOUT_SECS))
             .expect("Could not lock adapter context. This is most-likely a deadlock.");
 
-        if let Some(wgl) = &inner.context {
-            wgl.make_current(device)?;
-        }
+        let wgl = self.wgl.as_ref().map(|wgl| {
+            wgl.make_current(device).unwrap();
+            WglContextLock { context: wgl }
+        });
 
-        Ok(AdapterContextLock { inner })
+        Ok(AdapterContextLock { glow, wgl })
     }
+}
+
+struct WglContextLock<'a> {
+    context: &'a WglContext,
 }
 
 /// A guard containing a lock to an [`AdapterContext`], while the GL context is kept current.
 pub struct AdapterContextLock<'a> {
-    inner: MutexGuard<'a, Inner>,
+    glow: MutexGuard<'a, ManuallyDrop<glow::Context>>,
+    wgl: Option<WglContextLock<'a>>,
 }
 
 impl<'a> std::ops::Deref for AdapterContextLock<'a> {
     type Target = glow::Context;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner.gl
+        &self.glow
     }
 }
 
 impl<'a> Drop for AdapterContextLock<'a> {
     fn drop(&mut self) {
-        if let Some(wgl) = &self.inner.context {
-            wgl.unmake_current().unwrap()
+        if let Some(wgl) = &self.wgl.take() {
+            wgl.context.unmake_current().unwrap()
         }
     }
 }
 
 struct WglContext {
     context: OpenGL::HGLRC,
+    device: InstanceDevice,
 }
 
 impl WglContext {
@@ -143,8 +152,9 @@ unsafe impl Send for WglContext {}
 unsafe impl Sync for WglContext {}
 
 struct Inner {
-    gl: ManuallyDrop<glow::Context>,
-    device: InstanceDevice,
+    glow: Mutex<ManuallyDrop<glow::Context>>,
+    /// Note: the context contains a dummy hidden window and HDC.
+    /// Required for `wglMakeCurrent`.
     context: Option<WglContext>,
 }
 
@@ -164,11 +174,12 @@ impl Drop for Inner {
         // requires the context to be current when anything that may be holding
         // the `Arc<AdapterShared>` is dropped.
         let _guard = self.context.as_ref().map(|wgl| {
-            wgl.make_current(self.device.dc).unwrap();
+            wgl.make_current(wgl.device.dc).unwrap();
             CurrentGuard(wgl)
         });
+        let glow = self.glow.get_mut();
         // SAFETY: Field not used after this.
-        unsafe { ManuallyDrop::drop(&mut self.gl) };
+        unsafe { ManuallyDrop::drop(glow) };
     }
 }
 
@@ -457,7 +468,7 @@ impl crate::Instance for Instance {
                 e,
             )
         })?;
-        let context = WglContext { context };
+        let context = WglContext { context, device };
         context.make_current(dc).map_err(|e| {
             crate::InstanceError::with_source(
                 String::from("unable to set initial OpenGL context as current"),
@@ -493,6 +504,7 @@ impl crate::Instance for Instance {
             }
             WglContext {
                 context: OpenGL::HGLRC(context.cast_mut()),
+                device,
             }
         } else {
             context
