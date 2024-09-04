@@ -111,15 +111,11 @@ impl DxcLib {
     }
 
     pub fn create_instance<T: DxcObj>(&self) -> Result<T, crate::DeviceError> {
-        type Fun = extern "system" fn(
-            rclsid: *const windows_core::GUID,
-            riid: *const windows_core::GUID,
-            ppv: *mut *mut core::ffi::c_void,
-        ) -> windows_core::HRESULT;
-        let func: libloading::Symbol<Fun> = unsafe { self.lib.get(b"DxcCreateInstance\0") }?;
+        let func: libloading::Symbol<Dxc::DxcCreateInstanceProc> =
+            unsafe { self.lib.get(b"DxcCreateInstance\0") }?;
 
         let mut result__ = None;
-        (func)(&T::CLSID, &T::IID, <*mut _>::cast(&mut result__))
+        (func.unwrap())(&T::CLSID, &T::IID, <*mut _>::cast(&mut result__))
             .ok()
             .into_device_result("DxcCreateInstance")?;
         result__.ok_or(crate::DeviceError::Unexpected)
@@ -195,8 +191,8 @@ fn get_output<T: Interface>(
     res: &Dxc::IDxcResult,
     kind: Dxc::DXC_OUT_KIND,
 ) -> Result<T, crate::DeviceError> {
-    let mut result__: Option<T> = None;
-    unsafe { res.GetOutput::<T>(kind, &mut None, <*mut _>::cast(&mut result__)) }
+    let mut result__ = None;
+    unsafe { res.GetOutput::<T>(kind, &mut None, &mut result__) }
         .into_device_result("GetOutput")?;
     result__.ok_or(crate::DeviceError::Unexpected)
 }

@@ -167,6 +167,8 @@ impl D3D12Lib {
             <*mut _>::cast(&mut error),
         )
         .ok()
+        // TODO: If there's a HRESULT, error may still be non-null and
+        // contain info.
         .into_device_result("Root signature serialization")?;
 
         if let Some(error) = error {
