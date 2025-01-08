@@ -1,15 +1,17 @@
+use std::{mem, ops::Range};
+
+use windows::Win32::{
+    Foundation,
+    Graphics::{Direct3D12, Dxgi},
+};
+use windows_core::Interface as _;
+
 use super::conv;
 use crate::{
     auxil::{self, dxgi::result::HResult as _},
     dx12::borrow_interface_temporarily,
     AccelerationStructureEntries,
 };
-use std::{mem, ops::Range};
-use windows::Win32::{
-    Foundation,
-    Graphics::{Direct3D12, Dxgi},
-};
-use windows_core::Interface;
 
 fn make_box(origin: &wgt::Origin3d, size: &crate::CopyExtent) -> Direct3D12::D3D12_BOX {
     Direct3D12::D3D12_BOX {
@@ -792,23 +794,12 @@ impl crate::CommandEncoder for super::CommandEncoder {
             if let Some(ds_view) = ds_view {
                 if flags != Direct3D12::D3D12_CLEAR_FLAGS::default() {
                     unsafe {
-                        // list.ClearDepthStencilView(
-                        //     ds_view,
-                        //     flags,
-                        //     ds.clear_value.0,
-                        //     ds.clear_value.1 as u8,
-                        //     None,
-                        // )
-                        // TODO: Replace with the above in the next breaking windows-rs release,
-                        // when https://github.com/microsoft/win32metadata/pull/1971 is in.
-                        (Interface::vtable(list).ClearDepthStencilView)(
-                            Interface::as_raw(list),
+                        list.ClearDepthStencilView(
                             ds_view,
                             flags,
                             ds.clear_value.0,
                             ds.clear_value.1 as u8,
-                            0,
-                            std::ptr::null(),
+                            None,
                         )
                     }
                 }

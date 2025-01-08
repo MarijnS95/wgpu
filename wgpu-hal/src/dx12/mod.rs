@@ -1221,7 +1221,7 @@ impl crate::Surface for Surface {
                                 .ok_or(crate::SurfaceError::Other("IDXGIFactoryMedia not found"))?
                                 .CreateSwapChainForCompositionSurfaceHandle(
                                     &device.present_queue,
-                                    handle,
+                                    Some(handle),
                                     &desc,
                                     None,
                                 )

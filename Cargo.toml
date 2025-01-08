@@ -158,7 +158,7 @@ bit-set = "0.8"
 gpu-allocator = { version = "0.27", default-features = false }
 range-alloc = "0.1"
 mach-dxcompiler-rs = { version = "0.1.4", default-features = false }
-windows-core = { version = "0.58", default-features = false }
+windows-core = { version = "0.59", default-features = false }
 
 # Gles dependencies
 khronos-egl = "6"
@@ -168,7 +168,7 @@ glutin-winit = { version = "0.4", default-features = false }
 glutin_wgl_sys = "0.6"
 
 # DX12 and GLES dependencies
-windows = { version = "0.58", default-features = false }
+windows = { version = "0.59", default-features = false }
 
 # wasm32 dependencies
 console_error_panic_hook = "0.1.7"
@@ -196,6 +196,11 @@ ndk-sys = "0.5.0"
 # These overrides allow our examples to explicitly depend on release crates 
 [patch.crates-io]
 wgpu = { path = "./wgpu" }
+
+# https://github.com/Traverse-Research/gpu-allocator/pull/258
+gpu-allocator = { git = "https://github.com/Traverse-Research/gpu-allocator", rev = "dd4ad67" }
+# https://github.com/Xudong-Huang/generator-rs/pull/72
+generator = { git = "https://github.com/MarijnS95/generator-rs", rev = "bb99244" }
 
 [profile.release]
 lto = "thin"
