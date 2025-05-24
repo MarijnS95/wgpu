@@ -21,7 +21,7 @@ fn main() {
         surface::GlSurface as _,
     };
     use glutin_winit::GlWindow as _;
-    use rwh_05::HasRawWindowHandle as _;
+    use raw_window_handle::HasWindowHandle as _;
 
     env_logger::init();
     println!("Initializing external GL context");
@@ -29,8 +29,8 @@ fn main() {
     let event_loop = winit::event_loop::EventLoop::new().unwrap();
     // Only Windows requires the window to be present before creating the display.
     // Other platforms don't really need one.
-    let window_builder = cfg!(windows).then(|| {
-        winit::window::WindowBuilder::new()
+    let window_attributes = cfg!(windows).then(|| {
+        winit::window::WindowAttributes::new()
             .with_title("WGPU raw GLES example (press Escape to exit)")
     });
 
@@ -38,7 +38,8 @@ fn main() {
     // to Windows.
     let template = glutin::config::ConfigTemplateBuilder::new();
 
-    let display_builder = glutin_winit::DisplayBuilder::new().with_window_builder(window_builder);
+    let display_builder =
+        glutin_winit::DisplayBuilder::new().with_window_attributes(window_attributes);
 
     // Find the config with the maximum number of samples, so our triangle will be
     // smooth.
@@ -62,7 +63,10 @@ fn main() {
 
     println!("Picked a config with {} samples", gl_config.num_samples());
 
-    let raw_window_handle = window.as_ref().map(|window| window.raw_window_handle());
+    let raw_window_handle = window
+        .as_ref()
+        .and_then(|window| window.window_handle().ok())
+        .map(|wh| wh.as_raw());
 
     // XXX The display could be obtained from any object created by it, so we can
     // query it from the config.
@@ -111,13 +115,13 @@ fn main() {
                 } => window_target.exit(),
                 Event::Resumed => {
                     let window = window.take().unwrap_or_else(|| {
-                        let window_builder = winit::window::WindowBuilder::new()
+                        let window_attributes = winit::window::WindowAttributes::new()
                             .with_title("WGPU raw GLES example (press Escape to exit)");
-                        glutin_winit::finalize_window(window_target, window_builder, &gl_config)
+                        glutin_winit::finalize_window(window_target, window_attributes, &gl_config)
                             .unwrap()
                     });
 
-                    let attrs = window.build_surface_attributes(Default::default());
+                    let attrs = window.build_surface_attributes(Default::default()).unwrap();
                     let gl_surface = unsafe {
                         gl_config
                             .display()

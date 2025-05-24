@@ -59,7 +59,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # exclude the Vulkan backend on MacOS unless a separate feature `vulkan-portability` is enabled. In response
 # to these features, it enables features of platform specific crates. For example, the `vulkan` feature in wgpu-core
 # enables the `vulkan` feature in `wgpu-core-deps-windows-linux-android` which in turn enables the
-# `vulkan` feature in `wgpu-hal` _only_ on those platforms. If you enable the `vulkan-portability` feature, it 
+# `vulkan` feature in `wgpu-hal` _only_ on those platforms. If you enable the `vulkan-portability` feature, it
 # will enable the `vulkan` feature in `wgpu-core-deps-apple`. The only way to do this is unfortunately to have
 # a separate crate for each platform category that participates in the feature unification.
 #
@@ -331,12 +331,11 @@ cfg_aliases.workspace = true
 env_logger.workspace = true
 glam.workspace = true                                            # for ray-traced-triangle example
 naga = { workspace = true, features = ["wgsl-in", "termcolor"] }
-winit.workspace = true                                           # for "halmark" example
+# winit.workspace = true                                           # for "halmark" example
 
 ### Platform: Windows + MacOS + Linux for "raw-gles" example ###
 [target.'cfg(not(any(target_arch = "wasm32", target_os = "ios", target_os = "visionos")))'.dev-dependencies]
 glutin-winit = { workspace = true, features = ["egl", "wgl", "wayland", "x11"] }
 glutin = { workspace = true, features = ["egl", "wgl", "wayland", "x11"] }
-# temporary compatibility for glutin-winit
-rwh_05.workspace = true
-winit = { workspace = true, features = ["rwh_05"] }
+# TODO: Copy until main crate catches up
+winit = { version = "0.30.8", features = ["android-native-activity"] }
