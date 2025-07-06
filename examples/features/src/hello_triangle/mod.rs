@@ -140,31 +140,25 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     surface.configure(&device, &config);
 
-    let factory: CompositionSwapchain::IPresentationFactory = unsafe {
-        device.as_hal::<wgpu::hal::dx12::Api, _, _>(|device| {
-            dbg!(device.unwrap().raw_device().cast::<Dxgi::IDXGIDevice>());
-            let mut result__ = core::ptr::null_mut();
-            CompositionSwapchain::CreatePresentationFactory(
-                // dbg!(device.unwrap().raw_queue()),
-                dbg!(device.unwrap().raw_device()),
-                &CompositionSwapchain::IPresentationFactory::IID,
-                &mut result__,
-            )
-            .and_then(|()| windows::core::Type::from_abi(result__))
-        })
-    }
-    .unwrap();
-    dbg!(factory);
-
     // let factory: CompositionSwapchain::IPresentationFactory = unsafe {
-    //     adapter.as_hal::<wgpu::hal::dx12::Api, _, _>(|adapter| {
+    //     device.as_hal::<wgpu::hal::dx12::Api, _, _>(|device| {
+    //         dbg!(device.unwrap().raw_device().cast::<Dxgi::IDXGIDevice>());
     //         let mut result__ = core::ptr::null_mut();
     //         CompositionSwapchain::CreatePresentationFactory(
-    //             dbg!(&**adapter.unwrap().raw_adapter()),
+    //             // dbg!(device.unwrap().raw_queue()),
+    //             dbg!(device.unwrap().raw_device()),
     //             &CompositionSwapchain::IPresentationFactory::IID,
     //             &mut result__,
     //         )
     //         .and_then(|()| windows::core::Type::from_abi(result__))
+    //     })
+    // }
+    // .unwrap();
+    // dbg!(factory);
+
+    // let factory: CompositionSwapchain::IPresentationFactory = unsafe {
+    //     adapter.as_hal::<wgpu::hal::dx12::Api, _, _>(|adapter| {
+    //         CompositionSwapchain::CreatePresentationFactory(dbg!(&**adapter.unwrap().raw_adapter()))
     //     })
     // }
     // .unwrap();
@@ -237,9 +231,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
                         unsafe { dev.Commit() }.unwrap();
                         // unsafe { dev.WaitForCommitCompletion() }.unwrap();
-                        let mut stats = Default::default();
-                        unsafe { dev.GetFrameStatistics(&mut stats) }.unwrap();
-                        dbg!(stats);
+                        dbg!(unsafe { dev.GetFrameStatistics() }.unwrap());
                         for fid in [
                             DirectComposition::COMPOSITION_FRAME_ID_COMPLETED,
                             DirectComposition::COMPOSITION_FRAME_ID_CREATED,
@@ -269,14 +261,12 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                                     dbg!(framestats);
                                     // dbg!(&ids);
                                     for id in &ids {
-                                        let mut stats = Default::default();
-                                        unsafe {
+                                        dbg!(unsafe {
                                             DirectComposition::DCompositionGetTargetStatistics(
-                                                c, id, &mut stats,
+                                                c, id,
                                             )
                                         }
-                                        .unwrap();
-                                        dbg!(stats);
+                                        .unwrap());
                                     }
                                 }
                                 Err(e) => {

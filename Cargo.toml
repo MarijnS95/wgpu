@@ -219,7 +219,7 @@ glutin-winit = { version = "0.4", default-features = false }
 glutin_wgl_sys = "0.6"
 
 # DX12 and GLES dependencies
-windows = { version = "0.58", default-features = false }
+windows = { version = "0.61", default-features = false }
 
 # wasm32 dependencies
 console_error_panic_hook = "0.1.5"
@@ -249,6 +249,9 @@ ndk-sys = "0.6"
 # These overrides allow our examples to explicitly depend on release crates
 [patch.crates-io]
 wgpu = { path = "./wgpu" }
+windows = { path = "../windows-rs/crates/libs/windows" }
+windows-core = { path = "../windows-rs/crates/libs/core" }
+windows-targets = { path = "../windows-rs/crates/libs/targets" }
 
 [profile.release]
 lto = "thin"
