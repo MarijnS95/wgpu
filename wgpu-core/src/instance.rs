@@ -8,6 +8,7 @@ use alloc::{
 };
 
 use hashbrown::HashMap;
+use raw_window_handle::DisplayHandle;
 use thiserror::Error;
 use wgt::error::{ErrorType, WebGpuError};
 
@@ -132,6 +133,10 @@ impl Instance {
             flags: self.flags,
             memory_budget_thresholds: instance_desc.memory_budget_thresholds,
             backend_options: instance_desc.backend_options.clone(),
+            display: instance_desc
+                .display
+                // XXX: This assigns a bogus lifetime. hal::InstanceDescriptor should also take Raw?
+                .map(|r| unsafe { DisplayHandle::borrow_raw(r) }),
         };
 
         use hal::Instance as _;

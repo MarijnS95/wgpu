@@ -162,6 +162,7 @@ impl GPU {
                         gl: wgpu_types::GlBackendOptions::default(),
                         noop: wgpu_types::NoopBackendOptions::default(),
                     },
+                    display: None,
                 },
             )));
             state.borrow::<Instance>()

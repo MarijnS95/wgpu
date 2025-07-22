@@ -41,6 +41,7 @@ mod request_adapter_error {
             flags: wgpu::InstanceFlags::default(),
             memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
             backend_options: wgpu::BackendOptions::default(),
+            display: None,
         }
     }
 

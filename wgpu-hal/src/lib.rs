@@ -303,6 +303,7 @@ use core::{
 };
 
 use bitflags::bitflags;
+use raw_window_handle::DisplayHandle;
 use thiserror::Error;
 use wgt::WasmNotSendSync;
 
@@ -1762,6 +1763,7 @@ pub struct InstanceDescriptor<'a> {
     pub flags: wgt::InstanceFlags,
     pub memory_budget_thresholds: wgt::MemoryBudgetThresholds,
     pub backend_options: wgt::BackendOptions,
+    pub display: Option<DisplayHandle<'a>>,
 }
 
 #[derive(Clone, Debug)]

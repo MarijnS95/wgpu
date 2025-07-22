@@ -96,6 +96,7 @@ impl crate::Instance for Context {
             name: _,
             flags: _,
             memory_budget_thresholds: _,
+            display: _,
         } = *desc;
         if enable {
             Ok(Context)

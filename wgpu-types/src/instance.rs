@@ -18,6 +18,12 @@ pub struct InstanceDescriptor {
     pub memory_budget_thresholds: MemoryBudgetThresholds,
     /// Options the control the behavior of various backends.
     pub backend_options: BackendOptions,
+    /// System platform or compositor connection to connect this `Instance` to.
+    ///
+    /// - On GLES, this is required when intending to present on the platform.
+    /// - On Vulkan, this could be used to skip extensions.
+    // Cannot have the safe borrow variant here...
+    pub display: Option<raw_window_handle::RawDisplayHandle>,
 }
 
 impl Default for InstanceDescriptor {
@@ -27,6 +33,7 @@ impl Default for InstanceDescriptor {
             flags: InstanceFlags::default(),
             memory_budget_thresholds: MemoryBudgetThresholds::default(),
             backend_options: BackendOptions::default(),
+            display: None,
         }
     }
 }
@@ -53,6 +60,7 @@ impl InstanceDescriptor {
             flags,
             memory_budget_thresholds: MemoryBudgetThresholds::default(),
             backend_options,
+            display: None,
         }
     }
 }

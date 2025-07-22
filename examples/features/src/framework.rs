@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wgpu::{Instance, Surface};
+use wgpu::{rwh::HasDisplayHandle, Instance, Surface};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, KeyEvent, StartCause, WindowEvent},
@@ -268,7 +268,10 @@ impl ExampleContext {
     async fn init_async<E: Example>(surface: &mut SurfaceWrapper, window: Arc<Window>) -> Self {
         log::info!("Initializing wgpu...");
 
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
+        let mut desc = wgpu::InstanceDescriptor::from_env_or_default();
+        // XXX: Could also come from EventLoop before Window is created
+        desc.display = Some(window.display_handle().unwrap().as_raw());
+        let instance = wgpu::Instance::new(&desc);
         surface.pre_adapter(&instance, window);
 
         let adapter = get_adapter_with_capabilities_or_from_env(
